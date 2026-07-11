@@ -1,5 +1,5 @@
 /**
- * Discord Sims Visualizer Backend
+ * Frostflare Backend
  * Main entry point
  */
 
@@ -26,7 +26,7 @@ if (!DISCORD_TOKEN) {
  */
 async function main() {
   console.log("=".repeat(60));
-  console.log("Discord Sims Visualizer Backend");
+  console.log("Frostflare Backend");
   console.log("=".repeat(60));
   console.log(`WebSocket Port: ${WS_PORT}`);
   console.log(`Llama Endpoint: ${LLAMA_ENDPOINT}`);
@@ -57,6 +57,9 @@ async function main() {
   try {
     await bot.start();
     console.log("[Init] ✓ Discord bot is running");
+
+    // Set bot reference on WebSocket server for guild list broadcasting
+    wsServer.setDiscordBot(bot);
 
     // Log stats
     console.log("\n[Stats] Bot Statistics:");

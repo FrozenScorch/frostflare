@@ -31,6 +31,7 @@ export async function broadcastNode(
       username: user.username,
       displayName: user.displayName,
       avatar: user.avatar,
+      guildId: user.guildId,
       currentRoom: user.currentRoom,
       position: user.position,
       targetPosition: user.targetPosition,
@@ -40,6 +41,8 @@ export async function broadcastNode(
       lastActivity: user.lastActivity.toISOString(),
       speechBubble: user.speechBubble,
       isTyping: user.isTyping,
+      voiceChannelId: user.voiceChannelId,
+      voiceChannelName: user.voiceChannelName,
     })),
     interactions: interactions.map((i) => ({
       id: i.id,

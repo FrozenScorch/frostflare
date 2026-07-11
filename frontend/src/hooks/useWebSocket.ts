@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { WebSocketMessage, UserState, SocialInteraction, ServerStats } from "../types";
+import type { WebSocketMessage, UserState, SocialInteraction, ServerStats, GuildInfo } from "../types";
 import { createLogEntry, LogLevel } from "../utils/logger";
 import type { LogEntry } from "../utils/logger";
 
@@ -12,19 +12,21 @@ interface UseWebSocketResult {
   users: Map<string, UserState>;
   interactions: SocialInteraction[];
   stats: ServerStats | null;
+  guilds: GuildInfo[];
   logs: LogEntry[];
   connect: () => void;
   disconnect: () => void;
   clearLogs: () => void;
 }
 
-const WS_URL = `ws://localhost:8000`;
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
 
 export function useWebSocket(): UseWebSocketResult {
   const [connected, setConnected] = useState(false);
   const [users, setUsers] = useState<Map<string, UserState>>(new Map());
   const [interactions, setInteractions] = useState<SocialInteraction[]>([]);
   const [stats, setStats] = useState<ServerStats | null>(null);
+  const [guilds, setGuilds] = useState<GuildInfo[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -85,6 +87,13 @@ export function useWebSocket(): UseWebSocketResult {
                 setStats(data.stats);
               }
               addLog(LogLevel.INFO, `State update: ${data.users?.length || 0} users, ${data.interactions?.length || 0} interactions`);
+              break;
+
+            case "guilds_list":
+              if (data.guilds) {
+                setGuilds(data.guilds);
+                addLog(LogLevel.SUCCESS, `Received guild list: ${data.guilds.length} guilds`);
+              }
               break;
 
             case "initial_state":
@@ -159,6 +168,7 @@ export function useWebSocket(): UseWebSocketResult {
     users,
     interactions,
     stats,
+    guilds,
     logs,
     connect,
     disconnect,

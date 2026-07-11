@@ -1,5 +1,5 @@
 /**
- * State management for Discord Sims Visualizer LangGraph
+ * State management for Frostflare LangGraph
  */
 
 import { Annotation } from "@langchain/langgraph";
@@ -15,6 +15,7 @@ export interface UserState {
   displayName: string;
   avatar: string;
   userId: string;
+  guildId: string;
   currentRoom: RoomType;
   position: Vector3D;
   targetPosition: Vector3D;
@@ -27,11 +28,26 @@ export interface UserState {
   activityType: ActivityType;
   inVoiceChannel: boolean;
   isTyping: boolean;
+  // Voice channel tracking
+  voiceChannelId?: string | null;
+  voiceChannelName?: string | null;
   // Additional properties for internal tracking
   recentMessages?: string[];
   richPresence?: string;
   lastEvent?: DiscordEvent;
   lastClassificationTime?: number;
+  // Message activity tracking
+  editedMessageCount?: number;
+  deletedMessageCount?: number;
+  bulkDeleteParticipations?: number;
+  // Role and member tracking
+  roles?: string[];
+  previousRoles?: string[];
+  roleChangeCount?: number;
+  nicknameHistory?: Array<{ nickname: string; timestamp: Date }>;
+  // Timeout tracking
+  timeoutUntil?: Date | null;
+  timeoutCount?: number;
 }
 
 export type RoomType =
@@ -89,6 +105,13 @@ export interface DiscordEvent {
   data: any;
 }
 
+export interface GuildInfo {
+  id: string;
+  name: string;
+  icon: string | null;
+  memberCount: number;
+}
+
 export type EventType =
   | "message"
   | "typing_start"
@@ -96,7 +119,11 @@ export type EventType =
   | "presence_update"
   | "reaction_add"
   | "user_join"
-  | "user_leave";
+  | "user_leave"
+  | "message_update"
+  | "message_delete"
+  | "message_delete_bulk"
+  | "member_update";
 
 export interface SocialInteraction {
   id: string;
@@ -106,12 +133,34 @@ export interface SocialInteraction {
   room: RoomType;
 }
 
+export interface SpatialAnalysisData {
+  conversation_groups: string[][];
+  social_distances: Record<string, Record<string, number>>;
+  activity_clusters: Record<string, string[]>;
+  privacy_zones: Array<{ users: string[]; radius: number }>;
+}
+
+export interface RelationshipScore {
+  userId: string;
+  friendshipLevel: number; // 0-1, higher = closer friends
+  interactionCount: number;
+  lastInteraction: Date;
+  interactionTypes: Set<"message" | "voice" | "gaming" | "reaction">;
+}
+
+export interface RelationshipGraph {
+  relationships: Map<string, Map<string, RelationshipScore>>; // userId -> (targetUserId -> score)
+  lastUpdate: Date;
+}
+
 export interface GraphState {
   users: Map<string, UserState>;
   events: DiscordEvent[];
   interactions: SocialInteraction[];
   timestamp: Date;
   processedCount: number;
+  spatialAnalysis: Map<string, SpatialAnalysisData>;
+  relationshipGraph: RelationshipGraph;
 }
 
 // Create the state annotation for LangGraph
@@ -140,6 +189,17 @@ export const StateAnnotation = Annotation.Root({
   }),
   processedCount: Annotation<number>({
     reducer: (left?: number, right?: number) => (right ?? 0) + (left ?? 0),
-    default: () => 0,
+  }),
+  spatialAnalysis: Annotation<Map<string, SpatialAnalysisData>>({
+    reducer: (left?: Map<string, SpatialAnalysisData>, right?: Map<string, SpatialAnalysisData>) => {
+      return right || left || new Map();
+    },
+    default: () => new Map<string, SpatialAnalysisData>(),
+  }),
+  relationshipGraph: Annotation<RelationshipGraph>({
+    reducer: (left?: RelationshipGraph, right?: RelationshipGraph) => {
+      return right || left || { relationships: new Map(), lastUpdate: new Date() };
+    },
+    default: () => ({ relationships: new Map(), lastUpdate: new Date() }),
   }),
 });

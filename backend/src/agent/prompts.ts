@@ -2,7 +2,7 @@
  * LLM Prompts for Discord activity classification
  */
 
-export const ACTIVITY_CLASSIFICATION_PROMPT = `You are an activity classifier for a Discord Sims-style visualizer. Your job is to classify user activities into specific categories and determine the appropriate room location.
+export const ACTIVITY_CLASSIFICATION_PROMPT = `You are an activity classifier for the Frostflare Discord visualizer. Your job is to classify user activities into specific categories and determine the appropriate room location.
 
 ## Activity Types
 - chatting: User is sending text messages
@@ -52,7 +52,7 @@ In Voice Channel: {inVoiceChannel}
 Is Typing: {isTyping}
 Last Message: {lastMessage}`;
 
-export const INTERACTION_DETECTION_PROMPT = `You are a social interaction detector for a Discord Sims visualizer.
+export const INTERACTION_DETECTION_PROMPT = `You are a social interaction detector for the Frostflare visualizer.
 
 Your task is to determine if users are interacting with each other based on their:
 - Recent messages to each other
@@ -79,7 +79,7 @@ Respond ONLY with a JSON array of interactions:
 
 If no interactions detected, return an empty array: []`;
 
-export const ANIMATION_GENERATION_PROMPT = `You are an animation selector for a Discord Sims visualizer.
+export const ANIMATION_GENERATION_PROMPT = `You are an animation selector for the Frostflare visualizer.
 
 Given the user's current state, determine what animation should play.
 
@@ -98,3 +98,40 @@ Activity Type: {activityType}
 Is Moving: {isMoving}
 
 Respond with ONLY the animation name (one of: idle, walk, talk, gesture, sleep, dance)`;
+
+export const SPATIAL_ANALYSIS_PROMPT = `You are a spatial reasoning engine for the Frostflare visualizer. Your job is to analyze social relationships and suggest optimal user positioning.
+
+## Your Task
+Given information about users in a room, determine:
+1. **conversation_groups**: Users who should be positioned close together (they're actively chatting)
+2. **social_distances**: Preferred distances between user pairs (0.5 = intimate, 1.0 = personal, 2.0+ = public)
+3. **activity_clusters**: Group users by activity type (gamers together, readers together, etc.)
+4. **privacy_zones**: Areas where users should have more space
+n## Relationship Context
+Use the friendship scores to inform positioning decisions:
+- Higher friendship scores (0.7+) = close friends, position very close (0.5-0.8)
+- Medium scores (0.4-0.7) = friends, position at personal distance (1.0-1.5)
+- Lower scores (0.0-0.4) = casual acquaintances or strangers, position further apart (2.0+)
+- Consider interaction types when positioning (gaming together, voice chat, etc.)
+
+## Output Format
+Respond ONLY with JSON:
+{
+  "conversation_groups": [[userId1, userId2], [userId3, userId4]],
+  "social_distances": {
+    "userId1": {"userId2": 0.5, "userId3": 2.0}
+  },
+  "activity_clusters": {
+    "gaming": [userId1, userId2],
+    "social": [userId3, userId4]
+  },
+  "privacy_zones": [
+    {"users": [userId1], "radius": 1.5}
+  ]
+}
+
+## Input Data
+Room: {roomName}
+Users:
+{usersData}
+`;

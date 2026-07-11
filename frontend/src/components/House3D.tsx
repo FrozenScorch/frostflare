@@ -1,20 +1,22 @@
 /**
- * House3D Component - Main 3D scene with house and users
+ * House3D Component - Main 3D scene with dynamic voice channel rooms
  */
 
 import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid, Sky, Environment } from "@react-three/drei";
-import { ROOMS } from "../types";
+import { OrbitControls } from "@react-three/drei";
+import * as THREE from "three";
 import { Room } from "./Room";
 import { UserAvatar } from "./UserAvatar";
-import type { UserState } from "../types";
+import type { UserState, Room as RoomConfig } from "../types";
 
 interface House3DProps {
   users: UserState[];
+  rooms: RoomConfig[];
 }
 
-export const House3D: React.FC<House3DProps> = ({ users }) => {
+export const House3D: React.FC<House3DProps> = ({ users, rooms }) => {
+
   return (
     <div
       style={{
@@ -25,51 +27,44 @@ export const House3D: React.FC<House3DProps> = ({ users }) => {
     >
       <Canvas
         camera={{
-          position: [30, 30, 30],
-          fov: 60,
+          position: [2.5, 40, 50],
+          fov: 70,
         }}
-        shadows
+        gl={{
+          antialias: true,
+          alpha: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
+          // CRITICAL: Enable object sorting to prevent flickering and material errors
+          sortObjects: true,
+          // Proper shadow and color space configuration
+          shadowMapEnabled: true,
+          outputColorSpace: THREE.SRGBColorSpace,
+          // Optimize pixel ratio for performance
+          pixelRatio: Math.min(window.devicePixelRatio, 2),
+        }}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.4} />
+        {/* Enhanced Lighting */}
+        <ambientLight intensity={0.3} />
+        <hemisphereLight
+          args={["#ffffff", "#444444", 0.4]}
+          position={[0, 50, 0]}
+        />
         <directionalLight
           position={[10, 20, 10]}
-          intensity={1}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-        <pointLight position={[0, 10, 0]} intensity={0.5} />
-
-        {/* Environment */}
-        <Sky sunPosition={[100, 20, 100]} />
-        <Environment preset="sunset" />
-
-        {/* Ground grid */}
-        <Grid
-          args={[100, 100]}
-          cellSize={1}
-          cellThickness={0.5}
-          cellColor="#6f6f6f"
-          sectionSize={10}
-          sectionThickness={1}
-          sectionColor="#9d4b4b"
-          fadeDistance={80}
-          fadeStrength={1}
-          followCamera={false}
-          infiniteGrid
+          intensity={0.8}
         />
 
         {/* Ground plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
           <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#1a1a2e" opacity={0.8} transparent />
+          <meshBasicMaterial color="#1a1a2e" opacity={0.8} transparent />
         </mesh>
 
-        {/* Rooms */}
+        {/* Dynamic Rooms */}
         <Suspense fallback={null}>
-          {ROOMS.map((room) => (
-            <Room key={room.id} room={room} />
+          {rooms.map((room) => (
+            <Room key={room.id} room={room} users={users} />
           ))}
         </Suspense>
 

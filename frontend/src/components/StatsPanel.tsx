@@ -1,16 +1,44 @@
 /**
- * StatsPanel Component - Server statistics display
+ * StatsPanel Component - Server statistics display with dynamic rooms
  */
 
-import React from "react";
-import type { ServerStats } from "../types";
+import React, { useMemo } from "react";
+import type { ServerStats, GuildInfo, UserState, Room as RoomConfig } from "../types";
+import { GuildSelector } from "./GuildSelector";
 
 interface StatsPanelProps {
   stats: ServerStats | null;
   connected: boolean;
+  guilds: GuildInfo[];
+  selectedGuildId: string | null;
+  onGuildChange: (guildId: string | null) => void;
+  users: UserState[];
+  rooms: RoomConfig[];
 }
 
-export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, connected }) => {
+export const StatsPanel: React.FC<StatsPanelProps> = ({
+  stats,
+  connected,
+  guilds,
+  selectedGuildId,
+  onGuildChange,
+  users,
+  rooms,
+}) => {
+  // Calculate user count per room
+  const roomUserCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    users.forEach(user => {
+      const room = user.currentRoom || "unknown";
+      counts.set(room, (counts.get(room) || 0) + 1);
+    });
+    return counts;
+  }, [users]);
+
+  // Format room color to hex string
+  const formatColor = (color: number): string => {
+    return "#" + color.toString(16).padStart(6, "0");
+  };
   return (
     <div
       style={{
@@ -49,9 +77,18 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, connected }) => {
           }}
         />
         <div style={{ fontWeight: "bold", fontSize: "15px" }}>
-          Discord Sims Visualizer
+          Frostflare
         </div>
       </div>
+
+      {/* Guild Selector */}
+      {guilds.length > 0 && (
+        <GuildSelector
+          guilds={guilds}
+          selectedGuildId={selectedGuildId}
+          onGuildChange={onGuildChange}
+        />
+      )}
 
       {/* Stats */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -77,7 +114,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, connected }) => {
         />
       </div>
 
-      {/* Room legend */}
+      {/* Dynamic Room legend */}
       <div
         style={{
           marginTop: "12px",
@@ -90,21 +127,22 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({ stats, connected }) => {
         </div>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            display: "flex",
+            flexDirection: "column",
             gap: "4px",
             fontSize: "11px",
+            maxHeight: "200px",
+            overflowY: "auto",
           }}
         >
-          <RoomLegend name="Living Room" color="#cc8888" />
-          <RoomLegend name="Game Room" color="#88cc44" />
-          <RoomLegend name="Kitchen" color="#cccc88" />
-          <RoomLegend name="Library" color="#8888cc" />
-          <RoomLegend name="Media Room" color="#cc88cc" />
-          <RoomLegend name="Music Room" color="#88cccc" />
-          <RoomLegend name="Garden" color="#44cc44" />
-          <RoomLegend name="Bedroom" color="#888888" />
-          <RoomLegend name="Entrance" color="#88cc88" />
+          {rooms.map(room => (
+            <RoomLegend
+              key={room.id}
+              name={room.name}
+              color={formatColor(room.color)}
+              userCount={roomUserCounts.get(room.id) || 0}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -146,9 +184,10 @@ const StatRow: React.FC<StatRowProps> = ({ label, value, icon }) => {
 interface RoomLegendProps {
   name: string;
   color: string;
+  userCount: number;
 }
 
-const RoomLegend: React.FC<RoomLegendProps> = ({ name, color }) => {
+const RoomLegend: React.FC<RoomLegendProps> = ({ name, color, userCount }) => {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
       <div
@@ -159,7 +198,8 @@ const RoomLegend: React.FC<RoomLegendProps> = ({ name, color }) => {
           borderRadius: "2px",
         }}
       />
-      <span style={{ color: "#ccc" }}>{name}</span>
+      <span style={{ color: "#ccc", flex: 1 }}>{name}</span>
+      <span style={{ color: "#7289da", fontWeight: "bold" }}>{userCount}</span>
     </div>
   );
 };

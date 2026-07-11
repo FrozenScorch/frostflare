@@ -127,7 +127,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
         }}
       >
         <span>{logs.length} entries</span>
-        <span>Discord Sims Visualizer</span>
+        <span>Frostflare</span>
       </div>
     </div>
   );

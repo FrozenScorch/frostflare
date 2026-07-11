@@ -8,3 +8,4 @@ export { mapLocationNode } from "./map_location.js";
 export { animationNode } from "./animation.js";
 export { interactionsNode } from "./interactions.js";
 export { broadcastNode } from "./broadcast.js";
+export { spatialAnalysisNode } from "./spatial_analysis.js";

@@ -1,97 +1,87 @@
-# Discord Sims Visualizer
+# Frostflare
 
-A 3D visualization of Discord server activity using LangGraph patterns, Three.js frontend, and Node.js backend.
+Frostflare is a local-first 3D visualization of Discord activity: a Three.js house for the social layer, a LangGraph pipeline for event processing, and an optional local llama.cpp model for classification and spatial reasoning.
 
-## Features
+The name is the project’s whole temperature range: frozen rooms, live communities, and a little flame in the machinery.
 
-- **Discord Event Collection**: Tracks messages, typing, voice state changes, presence updates, reactions
-- **LangGraph State Machine**: 6-node pipeline for intelligent event processing
-- **LLM-Powered Classification**: Uses local llama.cpp to classify user activities
-- **3D Visualization**: Three.js house with 9 rooms showing user activity
-- **Real-time Updates**: WebSocket bridge between backend and frontend
-- **Activity Logging**: Comprehensive logging panel for debugging
+## What it does
+
+- Collects Discord messages, typing, presence, voice, reactions, joins, leaves, edits, deletes, and member updates.
+- Maps activity into a nine-room 3D house with avatars, furniture, speech bubbles, and animations.
+- Tracks lightweight relationship signals to place people near conversations and shared voice channels.
+- Streams state to the browser over WebSockets.
+- Falls back to rule-based classification when llama.cpp is unavailable.
 
 ## Architecture
 
-### Backend (Node.js/TypeScript)
-- Discord bot using discord.js
-- LangGraph state machine with nodes:
-  - `ingest`: Consume raw Discord events
-  - `classify`: Use Llama to classify user activity
-  - `map_location`: Determine which room user should be in
-  - `calculate_animation`: Determine what animation to play
-  - `detect_interactions`: Find who's near whom
-  - `broadcast`: Send state to frontend via WebSocket
-- Llama.cpp integration at localhost:1234
-- WebSocket server for frontend communication
+```text
+Discord gateway
+    -> ingest -> classify -> spatial_analysis -> map_location
+    -> detect_interactions -> animation -> broadcast
+    -> browser (React + Three.js)
+```
 
-### Frontend (Three.js + React)
-- 3D house model with 9 distinct rooms
-- User avatars with Discord profile pictures
-- Smooth position interpolation and animations
-- Speech bubbles and action icons
-- Activity log panel for debugging
-- OrbitControls for camera navigation
+The backend is TypeScript/Node.js. The frontend is React, Vite, and React Three Fiber. The LLM integration expects an OpenAI-compatible llama.cpp server at `http://localhost:1234` by default.
 
-## Room Mapping
+## Requirements
 
-- **living_room**: Voice chat, socializing
-- **game_room**: Gaming (from rich presence)
-- **kitchen**: Eating, cooking
-- **library**: Reading, studying, working
-- **media_room**: Watching videos
-- **music_room**: Listening to music
-- **garden**: Outside, walking
-- **bedroom**: Sleeping, AFK
-- **entrance**: New joins, exits
+- Node.js 18 or newer
+- A Discord bot application with these gateway intents enabled in the Discord Developer Portal:
+  - Presence Intent
+  - Server Members Intent
+  - Message Content Intent
+- Optional: a local llama.cpp server exposing `/health` and `/v1/chat/completions`
 
-## Development
-
-### Prerequisites
-- Node.js 18+
-- llama.cpp server running at localhost:1234
-- Discord bot token
-
-### Setup
+## Quick start
 
 ```bash
-# Install backend dependencies
-cd backend
-npm install
+git clone https://github.com/FrozenScorch/frostflare.git
+cd frostflare
 
-# Install frontend dependencies
+cd backend
+npm ci
+cp .env.example .env
+# Edit .env and set DISCORD_TOKEN
+npm run dev
+
+# In another terminal
 cd ../frontend
-npm install
+npm ci
+npm run dev
 ```
 
-### Running
+On Windows PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
+
+For a production-style check, run `npm run type-check` and `npm run build` in both `backend` and `frontend`.
+
+## Configuration
+
+Backend settings live in `backend/.env`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DISCORD_TOKEN` | required | Discord bot token; never commit it |
+| `LLAMA_ENDPOINT` | `http://localhost:1234` | Optional llama.cpp endpoint |
+| `WS_PORT` | `8000` | WebSocket port |
+| `WS_HOST` | `127.0.0.1` | Bind address; loopback is the safe default |
+
+The frontend uses `VITE_WS_URL` when provided and otherwise connects to `ws://localhost:8000`:
 
 ```bash
-# Start backend
-cd backend
-npm run dev
-
-# Start frontend (in another terminal)
-cd frontend
-npm run dev
+# frontend/.env.local
+VITE_WS_URL=ws://127.0.0.1:8000
 ```
 
-### Environment Variables
+## Privacy and deployment
 
-**Backend (.env):**
-```
-DISCORD_TOKEN=your_discord_token_here
-LLAMA_ENDPOINT=http://localhost:1234
-WS_PORT=8000
-```
+Frostflare processes Discord activity and message text. The default setup keeps the backend, llama.cpp, and WebSocket server on the local machine. The WebSocket endpoint has no authentication or TLS of its own, so do not expose it directly to the public internet. If remote access is needed, put it behind a VPN or an authenticated TLS reverse proxy and set `WS_HOST`/`VITE_WS_URL` deliberately.
 
-## Tech Stack
+Do not commit `.env`, bot tokens, Discord exports, screenshots containing user data, or local debugging captures.
 
-- **Backend**: Node.js, TypeScript, discord.js, LangGraph.js, ws
-- **Frontend**: React, Three.js, Vite
-- **LLM**: llama.cpp (local)
-- **Communication**: WebSocket
+## Project status
+
+This is an experimental personal project, not a hosted Discord analytics service. The repository includes build/type-check CI, but it does not yet include an automated gameplay/browser test suite.
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
