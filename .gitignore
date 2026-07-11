@@ -39,3 +39,29 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# Local agent/tooling scratch
+tmpclaude-*-cwd
+.mcp.json
+.playwright-mcp/
+
+# Local captures and browser verification output
+/*.png
+console-*.txt
+errors-*.txt
+final-console.txt
+final-snapshot.md
+capture.ps1
+verify_voice_channels.js
+write_ts.py
+
+# Windows device-name artifacts
+/nul
+/backend/nul
+
+# Local analysis exports kept outside the application source
+/sample design work/
+/voicetree-5-2/
+*.db
+*.sqlite*
+*.bin

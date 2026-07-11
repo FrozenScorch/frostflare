@@ -4,6 +4,7 @@
 
 import type { StateAnnotation, SocialInteraction } from "../state.js";
 import { getLlamaClient } from "../../llm/llama.js";
+import { getRelationshipTracker } from "../../services/relationship_tracker.js";
 
 /**
  * Interactions node detects social interactions between users
@@ -87,6 +88,7 @@ function ruleBasedInteractionDetection(
   _interactions: SocialInteraction[]
 ): Partial<typeof StateAnnotation.State> {
   const activeInteractions: SocialInteraction[] = [];
+  const relationshipTracker = getRelationshipTracker();
 
   // Group users by room
   const usersByRoom = new Map<string, any[]>();
@@ -129,6 +131,10 @@ function ruleBasedInteractionDetection(
         room: room as any,
       };
       activeInteractions.push(interaction);
+
+      // Track gaming relationships
+      const gamingUserIds = gamingUsers.map((u) => u.userId);
+      relationshipTracker.updateFromGamingSession(gamingUserIds, new Date());
 
       const usernames = gamingUsers.map((u) => u.username).join(", ");
       console.log(`[Interactions] ${usernames} are gaming together`);

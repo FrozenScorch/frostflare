@@ -1,7 +1,7 @@
 {
-  "name": "discord-sims-visualizer-backend",
+  "name": "frostflare-backend",
   "version": "1.0.0",
-  "description": "Backend for Discord Sims Visualizer - LangGraph-powered Discord event processing",
+  "description": "Frostflare backend for LangGraph-powered Discord activity visualization",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

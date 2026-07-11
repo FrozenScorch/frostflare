@@ -51,9 +51,14 @@ export async function classifyNode(
       );
 
       // Update user with classification
+      // Preserve activity actions (gaming, listening, watching) from Discord presence
+      const activityActions = ["gaming", "listening", "watching", "typing", "talking"];
       user.activityType = classification.activityType as any;
       user.currentRoom = classification.room as any;
-      user.action = classification.action as any;
+      // Only override action if it's not an activity action (preserve Discord presence actions)
+      if (!activityActions.includes(user.action)) {
+        user.action = classification.action as any;
+      }
       user.mood = classification.mood as any;
       user.lastClassificationTime = now;
 

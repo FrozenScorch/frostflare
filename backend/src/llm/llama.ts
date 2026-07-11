@@ -2,6 +2,8 @@
  * Llama.cpp integration for local LLM inference
  */
 
+import type { SpatialAnalysisData } from "../agent/state.js";
+
 export interface LlamaResponse {
   content: string;
   model: string;
@@ -22,6 +24,15 @@ export interface InteractionResult {
   type: string;
   confidence: number;
   reasoning: string;
+}
+
+interface SpatialAnalysisUser {
+  userId: string;
+  username: string;
+  currentRoom: string;
+  activity: string;
+  recentMessages: string[];
+  mood: string;
 }
 
 export class LlamaClient {
@@ -179,6 +190,7 @@ Detect social interactions. Respond with JSON array:
     "confidence": 0.0-1.0,
     "reasoning": "explanation"
   }
+
 ]
 
 Return [] if no interactions.`;
@@ -200,6 +212,62 @@ Return [] if no interactions.`;
     } catch (error) {
       console.error("Error detecting interactions:", error);
       return [];
+    }
+  }
+
+  /**
+   * Analyze social proximity and privacy preferences for users sharing a room.
+   */
+  async analyzeSpatialLayout(
+    users: SpatialAnalysisUser[],
+    room: string,
+    relationshipSummary: string
+  ): Promise<SpatialAnalysisData> {
+    const fallback = createFallbackSpatialAnalysis(users);
+    const prompt = `
+You are a spatial layout planner for a social 3D visualization. Respond ONLY with valid JSON.
+
+Room: ${room}
+Relationships:
+${relationshipSummary}
+
+Users:
+${users.map((user) => `- ${user.userId}: ${user.username}; activity=${user.activity}; mood=${user.mood}; recent=${user.recentMessages.slice(0, 3).join(" | ") || "none"}`).join("\n")}
+
+Return this exact shape:
+{
+  "conversation_groups": [["userId1", "userId2"]],
+  "social_distances": {"userId1": {"userId2": 2}},
+  "activity_clusters": {"gaming": ["userId1"]},
+  "privacy_zones": [{"users": ["userId1"], "radius": 3}]
+}
+Use only the supplied user IDs. Keep distances and radii between 1 and 5.`;
+
+    try {
+      const response = await this.complete(prompt, { maxTokens: 512, temperature: 0.2 });
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return fallback;
+
+      const parsed = JSON.parse(jsonMatch[0]) as Partial<SpatialAnalysisData>;
+      return {
+        conversation_groups: Array.isArray(parsed.conversation_groups)
+          ? parsed.conversation_groups.filter(Array.isArray).map((group) =>
+              group.filter((id): id is string => typeof id === "string")
+            )
+          : fallback.conversation_groups,
+        social_distances: isRecord(parsed.social_distances)
+          ? parsed.social_distances as Record<string, Record<string, number>>
+          : fallback.social_distances,
+        activity_clusters: isRecord(parsed.activity_clusters)
+          ? parsed.activity_clusters as Record<string, string[]>
+          : fallback.activity_clusters,
+        privacy_zones: Array.isArray(parsed.privacy_zones)
+          ? parsed.privacy_zones.filter(isPrivacyZone)
+          : fallback.privacy_zones,
+      };
+    } catch (error) {
+      console.error("Error analyzing spatial layout:", error);
+      return fallback;
     }
   }
 
@@ -246,4 +314,29 @@ export function getLlamaClient(): LlamaClient {
     llamaClient = new LlamaClient(endpoint);
   }
   return llamaClient;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isPrivacyZone(value: unknown): value is { users: string[]; radius: number } {
+  if (!isRecord(value) || !Array.isArray(value.users) || typeof value.radius !== "number") {
+    return false;
+  }
+  return value.users.every((userId) => typeof userId === "string");
+}
+
+function createFallbackSpatialAnalysis(users: SpatialAnalysisUser[]): SpatialAnalysisData {
+  const activityClusters: Record<string, string[]> = {};
+  for (const user of users) {
+    (activityClusters[user.activity] ??= []).push(user.userId);
+  }
+
+  return {
+    conversation_groups: users.length > 1 ? [users.map((user) => user.userId)] : [],
+    social_distances: {},
+    activity_clusters: activityClusters,
+    privacy_zones: [],
+  };
 }

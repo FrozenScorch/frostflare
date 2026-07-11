@@ -5,14 +5,23 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { setWsBroadcast } from "../agent/nodes/broadcast.js";
 
+// Forward declaration for Discord bot
+interface DiscordBot {
+  broadcastGuildList(): void;
+}
+
 export class WebSocketServerInstance {
   private wss: WebSocketServer;
   private port: number;
+  private host: string;
   private clients: Set<WebSocket> = new Set();
+  private discordBot: DiscordBot | null = null;
+  private lastState: any = null;  // Store the last state update
 
-  constructor(port: number) {
+  constructor(port: number, host = process.env.WS_HOST || "127.0.0.1") {
     this.port = port;
-    this.wss = new WebSocketServer({ port: this.port });
+    this.host = host;
+    this.wss = new WebSocketServer({ port: this.port, host: this.host });
 
     this.wss.on("listening", () => {
       console.log(`[WebSocket] Server listening on port ${this.port}`);
@@ -31,6 +40,14 @@ export class WebSocketServerInstance {
   }
 
   /**
+   * Set Discord bot reference (called after bot is initialized)
+   */
+  setDiscordBot(bot: DiscordBot) {
+    this.discordBot = bot;
+    console.log("[WebSocket] Discord bot reference registered");
+  }
+
+  /**
    * Handle new WebSocket connection
    */
   private handleConnection(ws: WebSocket) {
@@ -40,9 +57,27 @@ export class WebSocketServerInstance {
     // Send welcome message
     this.sendToClient(ws, {
       type: "connected",
-      message: "Connected to Discord Sims Visualizer",
+      message: "Connected to Frostflare",
       timestamp: new Date().toISOString(),
     });
+
+    // Send the last known state if available
+    if (this.lastState) {
+      console.log("[WebSocket] Sending current state to new client");
+      this.sendToClient(ws, this.lastState);
+    } else {
+      // No state yet, send waiting message
+      this.sendToClient(ws, {
+        type: "initial_state",
+        message: "Waiting for Discord events...",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Send guild list to new client
+    if (this.discordBot) {
+      this.discordBot.broadcastGuildList();
+    }
 
     // Handle incoming messages
     ws.on("message", (data: Buffer) => {
@@ -59,13 +94,6 @@ export class WebSocketServerInstance {
     ws.on("error", (error) => {
       console.error("[WebSocket] Client error:", error);
       this.clients.delete(ws);
-    });
-
-    // Send initial state
-    this.sendToClient(ws, {
-      type: "initial_state",
-      message: "Waiting for Discord events...",
-      timestamp: new Date().toISOString(),
     });
   }
 
@@ -120,6 +148,12 @@ export class WebSocketServerInstance {
     const message = JSON.stringify(data);
     let sentCount = 0;
 
+    // Store state updates for new clients
+    if (data.type === "state_update") {
+      this.lastState = data;
+      console.log(`[WebSocket] Stored state: ${data.users?.length || 0} users`);
+    }
+
     for (const client of this.clients) {
       if (client.readyState === WebSocket.OPEN) {
         try {
@@ -143,6 +177,7 @@ export class WebSocketServerInstance {
   getStats() {
     return {
       port: this.port,
+      host: this.host,
       connectedClients: this.clients.size,
     };
   }

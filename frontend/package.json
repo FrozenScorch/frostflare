@@ -1,7 +1,7 @@
 {
-  "name": "discord-sims-visualizer-frontend",
+  "name": "frostflare-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Discord Sims Visualizer - Three.js 3D visualization",
+  "description": "Frostflare Three.js 3D Discord activity visualization",
   "type": "module",
   "scripts": {
     "dev": "vite",
