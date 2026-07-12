@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Local-first 3D Discord activity visualization",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "setup": "npm ci --prefix backend && npm ci --prefix frontend",
