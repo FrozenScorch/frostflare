@@ -69,6 +69,7 @@ export class DiscordBot {
               // Add voice channel info if they're in one
               inVoiceChannel: member.voice.channelId !== null,
               voiceChannelId: member.voice.channelId,
+              voiceChannelName: member.voice.channel?.name || null,
             },
           });
         }

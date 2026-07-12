@@ -7,7 +7,7 @@ test("demo snapshots satisfy the public state contract and evolve", () => {
   const second = createDemoSnapshot(1);
 
   assert.equal(first.guilds.length, 1);
-  assert.equal(first.users.length, 5);
+  assert.equal(first.users.length, 7);
   assert.equal(first.stats.totalUsers, first.users.length);
   assert.equal(first.stats.activeUsers, first.users.length);
   assert.equal(first.interactions.length, 1);
@@ -23,5 +23,5 @@ test("demo snapshots satisfy the public state contract and evolve", () => {
 
   const voiceUser = first.users.find((user) => user.voiceChannelId);
   assert.ok(voiceUser);
-  assert.equal(voiceUser.currentRoom, voiceUser.voiceChannelId);
+  assert.equal(voiceUser.currentRoom, `voice:${voiceUser.voiceChannelId}`);
 });

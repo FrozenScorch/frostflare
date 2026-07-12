@@ -18,7 +18,7 @@
     "dev": "vite",
     "demo": "vite --mode demo",
     "test": "npm run test:fixtures && npm run test:hook",
-    "test:fixtures": "tsx --test src/data/demo.test.ts",
+    "test:fixtures": "tsx --test src/data/demo.test.ts src/data/houseLayout.test.ts",
     "test:hook": "vitest run --environment jsdom src/hooks/useWebSocket.test.tsx",
     "build": "tsc && vite build",
     "build:demo": "tsc && vite build --mode demo",

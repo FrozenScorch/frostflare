@@ -8,6 +8,7 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { Room } from "./Room";
 import { UserAvatar } from "./UserAvatar";
+import { HouseShell } from "./HouseShell";
 import type { UserState, Room as RoomConfig } from "../types";
 
 interface House3DProps {
@@ -58,8 +59,10 @@ export const House3D: React.FC<House3DProps> = ({ users, rooms }) => {
         {/* Ground plane */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
           <planeGeometry args={[100, 100]} />
-          <meshBasicMaterial color="#1a1a2e" opacity={0.8} transparent />
+          <meshStandardMaterial color="#171d2d" roughness={1} />
         </mesh>
+
+        <HouseShell rooms={rooms} />
 
         {/* Dynamic Rooms */}
         <Suspense fallback={null}>

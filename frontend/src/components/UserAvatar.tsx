@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { TextureLoader } from "three";
 import type { UserState } from "../types";
 import { lerpVector3, distance3D, getIdleBobbing, getWalkingBounce } from "../utils/animation";
+import { ActivityCue } from "./ActivityCue";
 
 interface UserAvatarProps {
   user: UserState;
@@ -115,7 +116,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
   };
 
   return (
-    <group ref={groupRef} position={[user.position.x, user.position.y, user.position.z]}>
+    <group ref={groupRef} position={[user.position.x, user.position.y, user.position.z]} scale={[1.22, 1.22, 1.22]}>
       {/* Pixel Art Avatar - Voxel style body */}
       <group ref={avatarRef}>
         {/* Body - boxy style */}
@@ -165,6 +166,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
         </mesh>
       </group>
 
+      <ActivityCue user={user} />
+
       {/* Speech bubble */}
       {user.speechBubble && (
         <group ref={bubbleRef} position={[0, 2.5, 0]}>
@@ -178,16 +181,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({ user }) => {
         </group>
       )}
 
-      {/* Typing indicator */}
-      {user.isTyping && (
-        <mesh position={[0, 1.8, 0.5]}>
-          <planeGeometry args={[0.5, 0.2]} />
-          <meshBasicMaterial color="#00ff00" />
-        </mesh>
-      )}
-
       {/* Username label above head */}
-      <Html position={[0, 2.2, 0]} center distanceFactor={8}>
+      <Html position={[0, 2.2, 0]} center distanceFactor={12}>
         <div style={{
           color: '#ffffff',
           fontSize: '14px',

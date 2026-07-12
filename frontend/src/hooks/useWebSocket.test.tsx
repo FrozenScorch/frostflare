@@ -17,15 +17,15 @@ describe("useWebSocket demo mode", () => {
     await waitFor(() => {
       expect(result.current.connected).toBe(true);
       expect(result.current.guilds).toHaveLength(1);
-      expect(result.current.users.size).toBe(5);
+      expect(result.current.users.size).toBe(7);
     });
 
     expect(result.current.mode).toBe("demo");
-    expect(result.current.stats?.totalUsers).toBe(5);
+    expect(result.current.stats?.totalUsers).toBe(7);
     expect(result.current.logs.map((log) => log.message)).toEqual(
       expect.arrayContaining([
         "Received guild list: 1 guilds",
-        "State update: 5 users, 1 interactions",
+        "State update: 7 users, 1 interactions",
         "Demo mode started — using fictional local activity",
       ])
     );
