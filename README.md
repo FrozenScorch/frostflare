@@ -120,7 +120,7 @@ npm run setup
 npm run check
 ```
 
-CI runs the same backend and frontend type-check/build gates on pull requests.
+CI runs the same documentation checks, smoke tests, live/demo builds, type checks, and production dependency audits on pull requests.
 
 ## Project status
 

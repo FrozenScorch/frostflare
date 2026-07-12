@@ -41,10 +41,11 @@ VITE_WS_URL=ws://127.0.0.1:9000
 
 ## Inspect the live WebSocket stream
 
-With the backend running, Node 20's built-in WebSocket client can print message types:
+With the backend running, use its installed `ws` dependency to print message types on every supported Node version:
 
 ```bash
-node -e "const ws=new WebSocket('ws://127.0.0.1:8000');ws.onmessage=e=>{const m=JSON.parse(e.data);console.log(m.type,m.users?.length??'')}"
+cd backend
+node --input-type=module -e "import WebSocket from 'ws';const ws=new WebSocket('ws://127.0.0.1:8000');ws.on('message',data=>{const m=JSON.parse(data.toString());console.log(m.type,m.users?.length??'')})"
 ```
 
 Request the cached state after connecting:
@@ -114,3 +115,5 @@ For a trusted remote viewer:
 3. Set `WS_HOST` deliberately on the backend.
 4. Set `VITE_WS_URL` to the protected `wss://` endpoint.
 5. Confirm no real names or message text appear in screenshots or logs before sharing them.
+
+The frontend also binds to loopback by default. For a deliberate, trusted LAN-only demo, run `npm run demo --prefix frontend -- --host 0.0.0.0` and use your firewall to restrict who can connect.

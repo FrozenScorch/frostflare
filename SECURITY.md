@@ -5,4 +5,4 @@ Frostflare is designed for local use. It reads Discord activity, including messa
 - Never commit `.env`, Discord bot tokens, model credentials, or exported Discord data.
 - Keep the WebSocket server on loopback, or put remote access behind an authenticated VPN/reverse proxy with TLS.
 - Review screenshots and logs for usernames, message text, and server details before sharing them.
-- Report suspected vulnerabilities privately to the repository owner instead of opening a public issue with credentials or personal data.
+- Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/FrozenScorch/frostflare/security/advisories/new). Do not open a public issue with credentials, exploit details, or personal data.

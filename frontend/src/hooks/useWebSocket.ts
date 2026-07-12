@@ -33,9 +33,9 @@ export function useWebSocket(): UseWebSocketResult {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<number>();
-  const heartbeatIntervalRef = useRef<number>();
-  const demoIntervalRef = useRef<number>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const demoIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const shouldReconnectRef = useRef(true);
 
   const addLog = useCallback((level: LogLevel, message: string) => {
@@ -43,6 +43,47 @@ export function useWebSocket(): UseWebSocketResult {
     setLogs((prev) => [...prev.slice(-99), log]); // Keep last 100 logs
     console.log(`[${level.toUpperCase()}]`, message);
   }, []);
+
+  const handleMessage = useCallback((data: WebSocketMessage) => {
+    switch (data.type) {
+      case "connected":
+        addLog(LogLevel.SUCCESS, data.message || "Connected");
+        break;
+
+      case "state_update":
+        if (data.users) {
+          setUsers(new Map(data.users.map((user) => [user.id, user])));
+        }
+        if (data.interactions) {
+          setInteractions(data.interactions);
+        }
+        if (data.stats) {
+          setStats(data.stats);
+        }
+        addLog(
+          LogLevel.INFO,
+          `State update: ${data.users?.length || 0} users, ${data.interactions?.length || 0} interactions`
+        );
+        break;
+
+      case "guilds_list":
+        if (data.guilds) {
+          setGuilds(data.guilds);
+          addLog(LogLevel.SUCCESS, `Received guild list: ${data.guilds.length} guilds`);
+        }
+        break;
+
+      case "initial_state":
+        addLog(LogLevel.INFO, data.message || "Initial state received");
+        break;
+
+      case "pong":
+        break;
+
+      default:
+        addLog(LogLevel.INFO, `Received: ${data.type}`);
+    }
+  }, [addLog]);
 
   const connect = useCallback(() => {
     if (DEMO_MODE) {
@@ -76,47 +117,7 @@ export function useWebSocket(): UseWebSocketResult {
       ws.onmessage = (event) => {
         try {
           const data: WebSocketMessage = JSON.parse(event.data);
-
-          switch (data.type) {
-            case "connected":
-              addLog(LogLevel.SUCCESS, data.message || "Connected");
-              break;
-
-            case "state_update":
-              if (data.users) {
-                const newUsers = new Map<string, UserState>();
-                data.users.forEach((user) => {
-                  newUsers.set(user.id, user);
-                });
-                setUsers(newUsers);
-              }
-              if (data.interactions) {
-                setInteractions(data.interactions);
-              }
-              if (data.stats) {
-                setStats(data.stats);
-              }
-              addLog(LogLevel.INFO, `State update: ${data.users?.length || 0} users, ${data.interactions?.length || 0} interactions`);
-              break;
-
-            case "guilds_list":
-              if (data.guilds) {
-                setGuilds(data.guilds);
-                addLog(LogLevel.SUCCESS, `Received guild list: ${data.guilds.length} guilds`);
-              }
-              break;
-
-            case "initial_state":
-              addLog(LogLevel.INFO, data.message || "Initial state received");
-              break;
-
-            case "pong":
-              // Heartbeat response, no action needed
-              break;
-
-            default:
-              addLog(LogLevel.INFO, `Received: ${data.type}`);
-          }
+          handleMessage(data);
         } catch (error) {
           addLog(LogLevel.ERROR, `Error parsing message: ${error}`);
         }
@@ -145,7 +146,7 @@ export function useWebSocket(): UseWebSocketResult {
     } catch (error) {
       addLog(LogLevel.ERROR, `Failed to connect: ${error}`);
     }
-  }, [addLog]);
+  }, [addLog, handleMessage]);
 
   const disconnect = useCallback(() => {
     shouldReconnectRef.current = false;
@@ -176,10 +177,18 @@ export function useWebSocket(): UseWebSocketResult {
       let step = 0;
       const applySnapshot = () => {
         const snapshot = createDemoSnapshot(step);
-        setUsers(new Map(snapshot.users.map((user) => [user.id, user])));
-        setInteractions(snapshot.interactions);
-        setStats(snapshot.stats);
-        setGuilds(snapshot.guilds);
+        handleMessage({
+          type: "guilds_list",
+          timestamp: new Date().toISOString(),
+          guilds: snapshot.guilds,
+        });
+        handleMessage({
+          type: "state_update",
+          timestamp: new Date().toISOString(),
+          users: snapshot.users,
+          interactions: snapshot.interactions,
+          stats: snapshot.stats,
+        });
         step += 1;
       };
 
@@ -199,7 +208,7 @@ export function useWebSocket(): UseWebSocketResult {
     return () => {
       disconnect();
     };
-  }, [addLog, connect, disconnect]);
+  }, [addLog, connect, disconnect, handleMessage]);
 
   return {
     mode: DEMO_MODE ? "demo" : "live",
