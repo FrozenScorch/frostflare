@@ -2,7 +2,7 @@
 
 ## The demo does not open
 
-- Confirm Node.js is version 20.19 or newer: `node --version`.
+- Confirm Node.js is 20.19+, 22.13+, or 24+: `node --version`.
 - Run `npm run setup` from the repository root.
 - Start with `npm run demo`, not the live frontend command.
 - Open the exact Vite URL shown in the terminal (normally <http://localhost:8500>).

@@ -8,7 +8,7 @@ Turn a Discord community into a living 3D house. Frostflare maps messages, voice
 
 ## Try it in two minutes
 
-You need [Node.js 20.19 or newer](https://nodejs.org/).
+You need a supported [Node.js](https://nodejs.org/) release: 20.19+, 22.13+, or 24+.
 
 ```bash
 git clone https://github.com/FrozenScorch/frostflare.git
