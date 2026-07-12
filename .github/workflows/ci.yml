@@ -28,14 +28,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
 
-      - name: Check backend types
-        run: npm run type-check --prefix backend
+      - name: Check documentation, types, and builds
+        run: npm run check
 
-      - name: Build backend
-        run: npm run build --prefix backend
-
-      - name: Check frontend types
-        run: npm run type-check --prefix frontend
-
-      - name: Build frontend
-        run: npm run build --prefix frontend
+      - name: Audit production dependencies
+        run: |
+          npm audit --prefix backend --omit=dev --audit-level=high
+          npm audit --prefix frontend --omit=dev --audit-level=high

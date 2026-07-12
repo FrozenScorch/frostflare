@@ -27,8 +27,8 @@ export const House3D: React.FC<House3DProps> = ({ users, rooms }) => {
     >
       <Canvas
         camera={{
-          position: [2.5, 40, 50],
-          fov: 70,
+          position: [2.5, 31, 38],
+          fov: 64,
         }}
         gl={{
           antialias: true,
@@ -78,6 +78,7 @@ export const House3D: React.FC<House3DProps> = ({ users, rooms }) => {
         {/* Camera controls */}
         <OrbitControls
           makeDefault
+          target={[2.5, 0, 1]}
           maxPolarAngle={Math.PI / 2.1}
           minDistance={10}
           maxDistance={80}

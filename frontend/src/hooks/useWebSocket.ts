@@ -6,8 +6,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { WebSocketMessage, UserState, SocialInteraction, ServerStats, GuildInfo } from "../types";
 import { createLogEntry, LogLevel } from "../utils/logger";
 import type { LogEntry } from "../utils/logger";
+import { createDemoSnapshot } from "../data/demo";
 
 interface UseWebSocketResult {
+  mode: "demo" | "live";
   connected: boolean;
   users: Map<string, UserState>;
   interactions: SocialInteraction[];
@@ -20,6 +22,7 @@ interface UseWebSocketResult {
 }
 
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 export function useWebSocket(): UseWebSocketResult {
   const [connected, setConnected] = useState(false);
@@ -32,6 +35,8 @@ export function useWebSocket(): UseWebSocketResult {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number>();
   const heartbeatIntervalRef = useRef<number>();
+  const demoIntervalRef = useRef<number>();
+  const shouldReconnectRef = useRef(true);
 
   const addLog = useCallback((level: LogLevel, message: string) => {
     const log = createLogEntry(level, message);
@@ -40,6 +45,11 @@ export function useWebSocket(): UseWebSocketResult {
   }, []);
 
   const connect = useCallback(() => {
+    if (DEMO_MODE) {
+      return;
+    }
+
+    shouldReconnectRef.current = true;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       addLog(LogLevel.WARNING, "Already connected");
       return;
@@ -125,11 +135,12 @@ export function useWebSocket(): UseWebSocketResult {
           clearInterval(heartbeatIntervalRef.current);
         }
 
-        // Attempt to reconnect after 5 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          addLog(LogLevel.INFO, "Attempting to reconnect...");
-          connect();
-        }, 5000);
+        if (shouldReconnectRef.current) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            addLog(LogLevel.INFO, "Attempting to reconnect...");
+            connect();
+          }, 5000);
+        }
       };
     } catch (error) {
       addLog(LogLevel.ERROR, `Failed to connect: ${error}`);
@@ -137,11 +148,15 @@ export function useWebSocket(): UseWebSocketResult {
   }, [addLog]);
 
   const disconnect = useCallback(() => {
+    shouldReconnectRef.current = false;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
+    }
+    if (demoIntervalRef.current) {
+      clearInterval(demoIntervalRef.current);
     }
     if (wsRef.current) {
       wsRef.current.close();
@@ -155,15 +170,39 @@ export function useWebSocket(): UseWebSocketResult {
     setLogs([]);
   }, []);
 
-  // Connect on mount
+  // Start the local fixture or connect to the live backend on mount.
   useEffect(() => {
+    if (DEMO_MODE) {
+      let step = 0;
+      const applySnapshot = () => {
+        const snapshot = createDemoSnapshot(step);
+        setUsers(new Map(snapshot.users.map((user) => [user.id, user])));
+        setInteractions(snapshot.interactions);
+        setStats(snapshot.stats);
+        setGuilds(snapshot.guilds);
+        step += 1;
+      };
+
+      applySnapshot();
+      setConnected(true);
+      addLog(LogLevel.SUCCESS, "Demo mode started — using fictional local activity");
+      demoIntervalRef.current = setInterval(applySnapshot, 4000);
+
+      return () => {
+        if (demoIntervalRef.current) {
+          clearInterval(demoIntervalRef.current);
+        }
+      };
+    }
+
     connect();
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [addLog, connect, disconnect]);
 
   return {
+    mode: DEMO_MODE ? "demo" : "live",
     connected,
     users,
     interactions,

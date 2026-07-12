@@ -24,7 +24,8 @@ export const GuildSelector: React.FC<GuildSelectorProps> = ({
         borderBottom: "1px solid #555",
       }}
     >
-      <div
+      <label
+        htmlFor="guild-selector"
         style={{
           fontSize: "11px",
           color: "#888",
@@ -32,8 +33,9 @@ export const GuildSelector: React.FC<GuildSelectorProps> = ({
         }}
       >
         SERVER
-      </div>
+      </label>
       <select
+        id="guild-selector"
         value={selectedGuildId || "all"}
         onChange={(e) => {
           const value = e.target.value;

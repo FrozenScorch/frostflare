@@ -155,7 +155,7 @@ async function handleMessage(
     }
   }
 
-  console.log(`[Ingest] Message from ${user.username}: ${data.content.substring(0, 30)}...`);
+  console.log("[Ingest] Message event processed");
 }
 
 /**
@@ -278,11 +278,10 @@ async function handlePresenceUpdate(
   }
 
   // Update rich presence if available
-  console.log(`[Ingest] ${user.username} activities:`, JSON.stringify(data.activities));
   if (data.activities && data.activities.length > 0) {
     // Skip Custom Status (type 4) and find real activities (gaming, listening, watching)
     const realActivity = data.activities.find((a: any) => a.type !== 4) || data.activities[0];
-    console.log(`[Ingest] ${user.username} activity:`, JSON.stringify(realActivity));
+    console.log("[Ingest] Rich presence activity detected");
 
     // Store rich presence details for LLM classification
     user.richPresence = realActivity.name || realActivity.details || realActivity.state || "";

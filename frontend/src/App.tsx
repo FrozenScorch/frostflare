@@ -10,7 +10,7 @@ import { useWebSocket } from "./hooks/useWebSocket";
 import type { Room as RoomConfig, UserState } from "./types";
 
 const App: React.FC = () => {
-  const { connected, users, stats, guilds, logs, clearLogs } = useWebSocket();
+  const { mode, connected, users, stats, guilds, logs, clearLogs } = useWebSocket();
   const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,7 +110,14 @@ const App: React.FC = () => {
       />
 
       {/* Activity Log */}
-      <ActivityLog logs={logs} onClear={clearLogs} />
+      <ActivityLog logs={logs} onClear={clearLogs} maxHeight={300} />
+
+      {mode === "demo" && (
+        <div className="demo-banner" role="status">
+          <strong>Demo mode</strong>
+          <span>Fictional activity · no Discord account or bot token required</span>
+        </div>
+      )}
 
       {/* Connection status indicator */}
       <div
@@ -138,7 +145,7 @@ const App: React.FC = () => {
             animation: connected ? "pulse 2s infinite" : "none",
           }}
         />
-        <span>{connected ? "Connected" : "Disconnected"}</span>
+        <span>{mode === "demo" ? "Local demo" : connected ? "Connected" : "Disconnected"}</span>
       </div>
 
       {/* Global styles for animations */}
