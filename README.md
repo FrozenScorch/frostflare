@@ -6,6 +6,8 @@ Turn a Discord community into a living 3D house. Frostflare maps messages, voice
 
 > No Discord account is needed for the demo. The sample people and activity are fictional and stay in your browser.
 
+**[Open the live Frostflare demo](https://frozenscorch.github.io/frostflare/)**
+
 ## Try it in two minutes
 
 You need a supported [Node.js](https://nodejs.org/) release: 20.19+, 22.13+, or 24+.
