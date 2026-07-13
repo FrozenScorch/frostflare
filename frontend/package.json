@@ -2,28 +2,47 @@
   "name": "frostflare-frontend",
   "version": "1.0.0",
   "description": "Frostflare Three.js 3D Discord activity visualization",
+  "author": "FrozenScorch",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FrozenScorch/frostflare.git",
+    "directory": "frontend"
+  },
+  "homepage": "https://github.com/FrozenScorch/frostflare#readme",
+  "bugs": {
+    "url": "https://github.com/FrozenScorch/frostflare/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "demo": "vite --mode demo",
+    "test": "npm run test:fixtures && npm run test:hook",
+    "test:fixtures": "tsx --test src/data/demo.test.ts src/data/houseLayout.test.ts",
+    "test:hook": "vitest run --environment jsdom src/hooks/useWebSocket.test.tsx",
     "build": "tsc && vite build",
+    "build:demo": "tsc && vite build --mode demo",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-three/drei": "^9.114.3",
+    "@react-three/fiber": "^8.17.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@react-three/fiber": "^8.17.10",
-    "@react-three/drei": "^9.114.3",
-    "three": "^0.169.0",
-    "uuid": "^11.0.3"
+    "three": "^0.169.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.1.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.169.0",
-    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^29.1.1",
+    "tsx": "^4.23.0",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

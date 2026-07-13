@@ -2,15 +2,15 @@
  * Room Component - 3D Room in the house with room-specific lighting
  */
 
-import React, { useRef, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Html } from "@react-three/drei";
-import * as THREE from "three";
 import { GamingPC, Couch, Table, LightFixture, Plant, TV, Chair, Bookshelf } from "./furniture";
 import { Desk } from "./furniture/Desk";
 import { DiningTable } from "./furniture/DiningTable";
 import { Speaker } from "./furniture/Speaker";
 import { Bed } from "./furniture/Bed";
 import type { Room as RoomConfig, UserState } from "../types";
+import { userBelongsInRoom } from "../data/houseLayout";
 
 interface RoomProps {
   room: RoomConfig;
@@ -19,14 +19,12 @@ interface RoomProps {
 }
 
 export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
   // Get users in this room and their unique actions
   const roomActions = useMemo(() => {
     const actionsInRoom = new Set<string>();
     const usersInRoom: string[] = [];
     users.forEach(user => {
-      if (user.currentRoom === room.id || user.voiceChannelId === room.id) {
+      if (userBelongsInRoom(user, room.id)) {
         actionsInRoom.add(user.action);
         usersInRoom.push(user.username);
       }
@@ -238,17 +236,7 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
     }
 
     // Handle voice channel rooms (dynamic rooms with custom IDs)
-    if (roomId.startsWith("lobby") === false && !Object.values({
-      game_room: "game_room",
-      living_room: "living_room",
-      media_room: "media_room",
-      library: "library",
-      kitchen: "kitchen",
-      music_room: "music_room",
-      garden: "garden",
-      bedroom: "bedroom",
-      entrance: "entrance"
-    }).includes(roomId)) {
+    if (room.isVoiceChannel) {
       // This is a voice channel room - add activity-based furniture
       const roomWidth = roomSize.x;
       const roomDepth = roomSize.z;
@@ -315,17 +303,12 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "game_room":
         return (
           <>
-            {/* Gaming setups - only show if users are gaming */}
-            {hasAction("gaming") && (
-              <>
-                <GamingPC position={[-2, 0, -1.5]} rgbColor="#00ff00" />
-                <Chair type="gaming" position={[-2, 0, -0.5]} color="#1a1a2e" />
-                <GamingPC position={[0, 0, -1.5]} rgbColor="#ff00ff" />
-                <Chair type="gaming" position={[0, 0, -0.5]} color="#2a1a2e" />
-                <GamingPC position={[2, 0, -1.5]} rgbColor="#00ffff" />
-                <Chair type="gaming" position={[2, 0, -0.5]} color="#1a2a2e" />
-              </>
-            )}
+            <GamingPC position={[-2, 0, -1.5]} rgbColor={hasAction("gaming") ? "#00ff88" : "#365b52"} />
+            <Chair type="gaming" position={[-2, 0, -0.5]} color="#1a1a2e" />
+            <GamingPC position={[0, 0, -1.5]} rgbColor={hasAction("gaming") ? "#ff44ff" : "#57405c"} />
+            <Chair type="gaming" position={[0, 0, -0.5]} color="#2a1a2e" />
+            <GamingPC position={[2, 0, -1.5]} rgbColor={hasAction("gaming") ? "#22ddff" : "#36515b"} />
+            <Chair type="gaming" position={[2, 0, -0.5]} color="#1a2a2e" />
             {/* Seating for talking/idle */}
             {(hasAction("talking") || hasAction("idle")) && (
               <Couch position={[0, 0, 1.5]} size="2-seater" color="#4a4a6a" />
@@ -338,17 +321,9 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "living_room":
         return (
           <>
-            {/* Seating for talking/idle */}
-            {(hasAction("talking") || hasAction("idle")) && (
-              <>
-                <Couch position={[0, 0, 0]} size="sectional" color="#4a4a6a" />
-                <Table type="coffee" position={[0, 0, 1.2]} />
-              </>
-            )}
-            {/* TV only if users are watching */}
-            {hasAction("watching") && (
-              <TV position={[0, 0, -2]} size={6} on={true} />
-            )}
+            <Couch position={[0, 0, 0]} size="sectional" color="#4a4a6a" />
+            <Table type="coffee" position={[0, 0, 1.2]} />
+            <TV position={[0, 1.4, -2.7]} size={6} on={hasAction("watching")} />
             <Plant type="ficus" position={[2, 0, 2]} />
             {/* Chairs for typing */}
             {hasAction("typing") && (
@@ -364,18 +339,10 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "media_room":
         return (
           <>
-            {/* Seating for watching/talking */}
-            {(hasAction("watching") || hasAction("talking") || hasAction("idle")) && (
-              <>
-                <Couch position={[0, 0, 1]} size="3-seater" color="#2a2a3a" />
-                <Chair type="gaming" position={[-1.5, 0, 0]} color="#2a1a1a" />
-                <Chair type="gaming" position={[1.5, 0, 0]} color="#2a1a1a" />
-              </>
-            )}
-            {/* TV only if users are watching */}
-            {hasAction("watching") && (
-              <TV position={[0, 0, -2]} size={8} on={true} frameColor="#333333" />
-            )}
+            <Couch position={[0, 0, 1]} size="3-seater" color="#2a2a3a" />
+            <Chair type="gaming" position={[-1.5, 0, 0]} color="#2a1a1a" />
+            <Chair type="gaming" position={[1.5, 0, 0]} color="#2a1a1a" />
+            <TV position={[0, 1.6, -2.7]} size={8} on={hasAction("watching")} frameColor="#333333" />
             <Table type="coffee" position={[0, 0, -1]} scale={0.8} />
           </>
         );
@@ -383,21 +350,10 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "library":
         return (
           <>
-            {/* Desk and chair for typing/reading */}
-            {(hasAction("typing") || hasAction("reading")) && (
-              <>
-                <Table type="desk" position={[-2, 0, -1]} />
-                <Chair type="office" position={[-2, 0, -0.2]} color="#5a4a3a" />
-              </>
-            )}
-            {/* Couch for reading/idle */}
-            {(hasAction("reading") || hasAction("idle")) && (
-              <Couch position={[1.5, 0, 0]} size="2-seater" color="#6a5a4a" />
-            )}
-            {/* Reading light if users are reading */}
-            {hasAction("reading") && (
-              <LightFixture type="table" position={[-2, 1, -1]} color="#ffcc88" intensity={1.2} />
-            )}
+            <Table type="desk" position={[-2, 0, -1]} />
+            <Chair type="office" position={[-2, 0, -0.2]} color="#5a4a3a" />
+            <Couch position={[1.5, 0, 0]} size="2-seater" color="#6a5a4a" />
+            <LightFixture type="table" position={[-2, 1, -1]} color="#ffcc88" intensity={hasAction("reading") ? 1.2 : 0.45} />
             <Plant type="monstera" position={[2, 0, 2]} />
             <Bookshelf position={[-2.5, 0, 1]} width={2} filled={true} />
             <Bookshelf position={[2.5, 0, 1]} width={2} filled={true} />
@@ -407,16 +363,11 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "kitchen":
         return (
           <>
-            {/* Dining table for eating */}
-            {hasAction("eating") && (
-              <>
-                <Table type="dining" position={[0, 0, 0]} />
-                <Chair type="dining" position={[-1, 0, 0.5]} color="#4a3a2a" />
-                <Chair type="dining" position={[1, 0, 0.5]} color="#4a3a2a" />
-                <Chair type="dining" position={[-1, 0, -0.5]} color="#4a3a2a" />
-                <Chair type="dining" position={[1, 0, -0.5]} color="#4a3a2a" />
-              </>
-            )}
+            <Table type="dining" position={[0, 0, 0]} />
+            <Chair type="dining" position={[-1.2, 0, 0.8]} color="#4a3a2a" />
+            <Chair type="dining" position={[1.2, 0, 0.8]} color="#4a3a2a" />
+            <Chair type="dining" position={[-1.2, 0, -0.8]} color="#4a3a2a" />
+            <Chair type="dining" position={[1.2, 0, -0.8]} color="#4a3a2a" />
             <Plant type="succulent" position={[2, 0, -2]} size={0.6} />
           </>
         );
@@ -424,17 +375,9 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
       case "music_room":
         return (
           <>
-            {/* Couch for listening/idle */}
-            {(hasAction("listening") || hasAction("idle")) && (
-              <Couch position={[0, 0, 1.5]} size="2-seater" color="#5a4a6a" />
-            )}
-            {/* Speakers only if users are listening */}
-            {hasAction("listening") && (
-              <>
-                <Speaker position={[-2, 0, -1]} scale={1} on={true} />
-                <Speaker position={[2, 0, -1]} scale={1} on={true} />
-              </>
-            )}
+            <Couch position={[0, 0, 1.5]} size="2-seater" color="#5a4a6a" />
+            <Speaker position={[-2, 0, -1]} scale={1.25} on={hasAction("listening")} />
+            <Speaker position={[2, 0, -1]} scale={1.25} on={hasAction("listening")} />
             <Chair type="office" position={[-1.5, 0, -1]} color="#3a3a4a" />
             <Chair type="office" position={[1.5, 0, -1]} color="#3a3a4a" />
           </>
@@ -448,20 +391,14 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
             <Plant type="succulent" position={[0, 0, 2]} size={0.8} />
             <Plant type="snake" position={[2, 0, -1.5]} size={1} />
             <Plant type="monstera" position={[-2, 0, 1]} size={1.2} />
-            {/* Couch for idle/relaxing */}
-            {(hasAction("idle") || hasAction("reading")) && (
-              <Couch position={[0, 0, 0]} size="2-seater" color="#5a6a4a" />
-            )}
+            <Couch position={[0, 0, 0]} size="2-seater" color="#5a6a4a" />
           </>
         );
 
       case "bedroom":
         return (
           <>
-            {/* Bed for sleeping */}
-            {hasAction("sleeping") && (
-              <Bed position={[0, 0, 0]} size="queen" />
-            )}
+            <Bed position={[0, 0, 0]} size="queen" />
             {/* Desks for typing */}
             {hasAction("typing") && (
               <>
@@ -507,101 +444,36 @@ export const Room: React.FC<RoomProps> = ({ room, users, label = true }) => {
 
       {/* Contact shadows removed to prevent texture unit overflow */}
 
-      {/* Room floor with enhanced materials */}
-      <mesh
-        ref={meshRef}
-        position={[0, 0, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
+      {/* Opaque floor tiles keep rooms distinct without turning them into boxes. */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[room.size.x, room.size.z]} />
-        <meshBasicMaterial
+        <meshStandardMaterial
           color={room.color}
-          opacity={0.4}
-          transparent
+          roughness={0.9}
+          metalness={0.02}
         />
       </mesh>
-
-      {/* Room base/thickness */}
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[room.size.x, 0.2, room.size.z]} />
-        <meshBasicMaterial
-          color={room.color}
-          opacity={0.3}
-          transparent
-        />
-      </mesh>
-
-      {/* Room walls (transparent) */}
-      <group position={[0, room.size.y / 2, 0]}>
-        {/* Front wall */}
-        <mesh position={[0, 0, room.size.z / 2]}>
-          <boxGeometry args={[room.size.x, room.size.y, 0.1]} />
-          <meshBasicMaterial
-            color={room.color}
-            opacity={0.08}
-            transparent
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-
-        {/* Back wall */}
-        <mesh position={[0, 0, -room.size.z / 2]}>
-          <boxGeometry args={[room.size.x, room.size.y, 0.1]} />
-          <meshBasicMaterial
-            color={room.color}
-            opacity={0.08}
-            transparent
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-
-        {/* Left wall */}
-        <mesh position={[-room.size.x / 2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <boxGeometry args={[room.size.z, room.size.y, 0.1]} />
-          <meshBasicMaterial
-            color={room.color}
-            opacity={0.08}
-            transparent
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-
-        {/* Right wall */}
-        <mesh position={[room.size.x / 2, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <boxGeometry args={[room.size.z, room.size.y, 0.1]} />
-          <meshBasicMaterial
-            color={room.color}
-            opacity={0.08}
-            transparent
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      </group>
 
       {/* Room name label */}
       {label && (
-        <Html position={[0, room.size.y + 0.5, 0]} center distanceFactor={10}>
+        <Html position={[0, 2.8, -3.8]} center distanceFactor={14}>
           <div style={{
             color: '#ffffff',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 'bold',
             textShadow: '0 0 6px #000000, 0 0 12px #000000',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             userSelect: 'none',
+            background: room.isVoiceChannel ? 'rgba(38, 74, 102, 0.82)' : 'rgba(18, 22, 32, 0.7)',
+            border: '1px solid rgba(255, 255, 255, 0.22)',
+            borderRadius: '999px',
+            padding: '3px 8px',
           }}>
-            {room.name}
+            {room.isVoiceChannel ? `🔊 ${room.name}` : room.name}
           </div>
         </Html>
       )}
-
-      {/* Room edges for better visibility */}
-      <lineSegments>
-        <edgesGeometry>
-          <boxGeometry args={[room.size.x, room.size.y, room.size.z]} />
-        </edgesGeometry>
-        <lineBasicMaterial color={room.color} opacity={0.6} transparent linewidth={2} />
-      </lineSegments>
     </group>
   );
 };

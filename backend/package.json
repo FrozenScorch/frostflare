@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "test": "tsx --test src/agent/graph.smoke.test.ts src/agent/nodes/map_location.test.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "type-check": "tsc --noEmit"
@@ -15,21 +16,31 @@
     "visualization",
     "llama"
   ],
-  "author": "",
+  "author": "FrozenScorch",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FrozenScorch/frostflare.git",
+    "directory": "backend"
+  },
+  "homepage": "https://github.com/FrozenScorch/frostflare#readme",
+  "bugs": {
+    "url": "https://github.com/FrozenScorch/frostflare/issues"
+  },
   "dependencies": {
-    "@langchain/langgraph": "^0.2.19",
-    "@langchain/core": "^0.3.15",
-    "discord.js": "^14.16.3",
+    "@langchain/core": "^1.2.2",
+    "@langchain/langgraph": "^1.4.7",
+    "discord.js": "^14.26.5",
     "dotenv": "^16.4.5",
-    "ws": "^8.18.0",
-    "uuid": "^11.0.3"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
     "@types/ws": "^8.5.13",
-    "@types/uuid": "^10.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "undici": "^6.27.0"
   }
 }

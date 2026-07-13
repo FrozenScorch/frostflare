@@ -4,31 +4,31 @@
 
 import type { StateAnnotation, Vector3D, UserState, SpatialAnalysisData } from "../state.js";
 
-// Room center positions in 3D space (MUST MATCH frontend App.tsx positions)
-const ROOM_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
+// Room center positions in 3D space (MUST MATCH frontend data/houseLayout.ts)
+export const ROOM_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
   unknown: { x: 0, y: 0, z: -10 }, // Default to living room
-  entrance: { x: 0, y: 0, z: 0 },
-  game_room: { x: -15, y: 0, z: -10 },
+  game_room: { x: -10, y: 0, z: -10 },
   living_room: { x: 0, y: 0, z: -10 },
-  media_room: { x: 15, y: 0, z: -10 },
-  kitchen: { x: -15, y: 0, z: 5 },
-  library: { x: 0, y: 0, z: 5 },
-  music_room: { x: 15, y: 0, z: 5 },
-  garden: { x: -7.5, y: 0, z: 15 },
-  bedroom: { x: 10, y: 0, z: 15 },
+  media_room: { x: 10, y: 0, z: -10 },
+  library: { x: -10, y: 0, z: 0 },
+  kitchen: { x: 0, y: 0, z: 0 },
+  music_room: { x: 10, y: 0, z: 0 },
+  garden: { x: -10, y: 0, z: 10 },
+  entrance: { x: 0, y: 0, z: 10 },
+  bedroom: { x: 10, y: 0, z: 10 },
 };
 
 // Room bounds for spawning users within rooms
 const ROOM_BOUNDS: Record<string, { width: number; depth: number }> = {
   unknown: { width: 12, depth: 12 }, // Default to living room bounds
-  entrance: { width: 8, depth: 8 },
-  living_room: { width: 12, depth: 12 },
+  entrance: { width: 10, depth: 10 },
+  living_room: { width: 10, depth: 10 },
   game_room: { width: 10, depth: 10 },
-  kitchen: { width: 8, depth: 8 },
+  kitchen: { width: 10, depth: 10 },
   library: { width: 10, depth: 10 },
-  media_room: { width: 10, depth: 8 },
-  music_room: { width: 8, depth: 8 },
-  garden: { width: 15, depth: 15 },
+  media_room: { width: 10, depth: 10 },
+  music_room: { width: 10, depth: 10 },
+  garden: { width: 10, depth: 10 },
   bedroom: { width: 10, depth: 10 },
 };
 
@@ -108,6 +108,56 @@ const DEFAULT_SOCIAL_DISTANCE = 2.0;
 const MIN_DISTANCE = 1.0; // Minimum distance to prevent overlap
 const MAX_DISTANCE = 5.0; // Maximum distance for social distancing
 
+const ROOM_STATIONS: Record<string, Vector3D[]> = {
+  game_room: [
+    { x: -2, y: 0, z: -0.4 },
+    { x: 0, y: 0, z: -0.4 },
+    { x: 2, y: 0, z: -0.4 },
+  ],
+  living_room: [
+    { x: -1.4, y: 0, z: 1 },
+    { x: 1.4, y: 0, z: 1 },
+    { x: 0, y: 0, z: -0.4 },
+  ],
+  media_room: [
+    { x: -1.5, y: 0, z: 0.8 },
+    { x: 1.5, y: 0, z: 0.8 },
+    { x: 0, y: 0, z: 1.5 },
+  ],
+  library: [
+    { x: -2, y: 0, z: -0.2 },
+    { x: 1.5, y: 0, z: 0.6 },
+  ],
+  kitchen: [
+    { x: -1.2, y: 0, z: 0.8 },
+    { x: 1.2, y: 0, z: 0.8 },
+    { x: 0, y: 0, z: -1.2 },
+  ],
+  music_room: [
+    { x: 0, y: 0, z: 1.1 },
+    { x: -1.5, y: 0, z: -0.2 },
+    { x: 1.5, y: 0, z: -0.2 },
+  ],
+  garden: [{ x: 0, y: 0, z: 0 }],
+  entrance: [{ x: 0, y: 0, z: 0 }],
+  bedroom: [
+    { x: 0, y: 0, z: 0.6 },
+    { x: -1.8, y: 0, z: -0.3 },
+  ],
+};
+
+export function getVoiceRoomPosition(index: number, total: number): Vector3D {
+  return {
+    x: 20,
+    y: 0,
+    z: (index - (total - 1) / 2) * 10,
+  };
+}
+
+function normalizeVoiceChannelId(channelId: string): string {
+  return channelId.replace(/^voice:/, "");
+}
+
 /**
  * Conversation cluster interface
  */
@@ -131,7 +181,7 @@ export async function mapLocationNode(
 
   Array.from(updatedUsers.entries()).forEach(([_userId, user]) => {
     const roomId = user.inVoiceChannel && user.voiceChannelId
-      ? `voice:${user.voiceChannelId}`
+      ? `voice:${normalizeVoiceChannelId(user.voiceChannelId)}`
       : user.currentRoom || "unknown";
     if (!roomGroups.has(roomId)) {
       roomGroups.set(roomId, []);
@@ -139,10 +189,19 @@ export async function mapLocationNode(
     roomGroups.get(roomId)!.push(user);
   });
 
+  const voiceRoomIds = Array.from(roomGroups.keys())
+    .filter((roomId) => roomId.startsWith("voice:"))
+    .sort();
+
   // Position users in each room
   for (const [roomId, roomUsers] of roomGroups.entries()) {
     if (roomId.startsWith("voice:")) {
-      await positionUsersInVoiceChannelRoom(roomId.slice("voice:".length), roomUsers);
+      await positionUsersInVoiceChannelRoom(
+        roomId.slice("voice:".length),
+        roomUsers,
+        voiceRoomIds.indexOf(roomId),
+        voiceRoomIds.length,
+      );
     } else if (spatialAnalysis.has(roomId)) {
       await positionUsersWithSpatialIntelligence(roomId, roomUsers, spatialAnalysis.get(roomId)!);
     } else if (ROOM_POSITIONS[roomId]) {
@@ -204,7 +263,15 @@ async function positionUsersWithSpatialIntelligence(
   }
 
   // Step 4: Adjust positions for furniture proximity
-  adjustForFurnitureProximity(userPositions, users, furniture);
+  const worldFurniture = furniture.map((item) => ({
+    ...item,
+    position: {
+      x: roomCenter.x + item.position.x,
+      y: roomCenter.y + item.position.y,
+      z: roomCenter.z + item.position.z,
+    },
+  }));
+  adjustForFurnitureProximity(userPositions, users, worldFurniture);
 
   // Step 5: Resolve any remaining collisions
   resolveCollisions(userPositions, users);
@@ -510,7 +577,20 @@ async function positionUsersInActivityRoom(roomId: string, users: UserState[]): 
     return;
   }
 
-  // Position users in a circle within the room
+  const stations = ROOM_STATIONS[roomId];
+  if (stations && stations.length > 0) {
+    users.forEach((user, index) => {
+      const station = stations[index % stations.length];
+      const lap = Math.floor(index / stations.length);
+      updateUserPositionState(user, {
+        x: roomCenter.x + station.x + lap * 0.55,
+        y: roomCenter.y,
+        z: roomCenter.z + station.z + lap * 0.55,
+      });
+    });
+    return;
+  }
+
   await positionUsersInCircleCustom(users, roomCenter, roomBounds.width, roomBounds.depth, roomId);
 }
 
@@ -520,23 +600,12 @@ async function positionUsersInActivityRoom(roomId: string, users: UserState[]): 
  */
 async function positionUsersInVoiceChannelRoom(
   channelId: string,
-  users: UserState[]
+  users: UserState[],
+  index = 0,
+  total = 1,
 ): Promise<void> {
-  // Calculate position based on voice channel ID hash (for consistent positioning)
-  // Voice channels are at x: 30, spaced by 12 units in z
-  const voiceZoneStart = 30;
-  const voiceChannelSpacing = 12;
-
-  // Use the first user's voice channel name to get a stable index
   const channelName = users[0]?.voiceChannelName || channelId;
-  // Simple hash of channel name to get an index
-  const hashIndex = channelName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10;
-
-  const roomCenter = {
-    x: voiceZoneStart,
-    y: 0,
-    z: (hashIndex * voiceChannelSpacing) - (5 * voiceChannelSpacing)
-  };
+  const roomCenter = getVoiceRoomPosition(index, total);
 
   // Position users in a circle within the voice channel room
   await positionUsersInCircleCustom(users, roomCenter, 10, 10, `Voice: ${channelName}`);

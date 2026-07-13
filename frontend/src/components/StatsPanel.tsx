@@ -5,6 +5,8 @@
 import React, { useMemo } from "react";
 import type { ServerStats, GuildInfo, UserState, Room as RoomConfig } from "../types";
 import { GuildSelector } from "./GuildSelector";
+import { userBelongsInRoom } from "../data/houseLayout";
+import { getActivityPresentation } from "../data/activityPresentation";
 
 interface StatsPanelProps {
   stats: ServerStats | null;
@@ -28,12 +30,12 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   // Calculate user count per room
   const roomUserCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    users.forEach(user => {
-      const room = user.currentRoom || "unknown";
-      counts.set(room, (counts.get(room) || 0) + 1);
+    rooms.forEach((room) => {
+      const count = users.filter((user) => userBelongsInRoom(user, room.id)).length;
+      counts.set(room.id, count);
     });
     return counts;
-  }, [users]);
+  }, [rooms, users]);
 
   // Format room color to hex string
   const formatColor = (color: number): string => {
@@ -112,6 +114,43 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
           value={stats?.processedEvents ?? 0}
           icon="📊"
         />
+      </div>
+
+      {/* Person-by-person activity contract, readable without zooming the scene. */}
+      <div
+        style={{
+          marginTop: "12px",
+          paddingTop: "8px",
+          borderTop: "1px solid #555",
+        }}
+      >
+        <div style={{ fontSize: "11px", color: "#888", marginBottom: "6px" }}>
+          PEOPLE
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 8px" }}>
+          {users.map((user) => {
+            const activity = getActivityPresentation(user);
+            return (
+              <div
+                key={user.id}
+                title={`${user.displayName}: ${activity.label}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  minWidth: 0,
+                  color: activity.color,
+                  fontSize: "10px",
+                }}
+              >
+                <span aria-hidden="true">{activity.icon}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <strong style={{ color: "#f4f6fa" }}>{user.displayName}</strong> {activity.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Dynamic Room legend */}

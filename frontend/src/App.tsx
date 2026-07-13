@@ -7,10 +7,10 @@ import { House3D } from "./components/House3D";
 import { ActivityLog } from "./components/ActivityLog";
 import { StatsPanel } from "./components/StatsPanel";
 import { useWebSocket } from "./hooks/useWebSocket";
-import type { Room as RoomConfig, UserState } from "./types";
+import { buildRooms } from "./data/houseLayout";
 
 const App: React.FC = () => {
-  const { connected, users, stats, guilds, logs, clearLogs } = useWebSocket();
+  const { mode, connected, users, stats, guilds, logs, clearLogs } = useWebSocket();
   const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,53 +45,7 @@ const App: React.FC = () => {
     return allUsers;
   }, [users, selectedGuildId]);
 
-  // Dynamically generate rooms based on activity and voice channels
-  const rooms = useMemo(() => {
-    // Room type definitions with positions
-    const roomTypes = [
-      { id: "game_room", name: "Game Room", color: 0x8844ff, position: { x: -15, y: 0, z: -10 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "living_room", name: "Living Room", color: 0xffaa66, position: { x: 0, y: 0, z: -10 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "media_room", name: "Media Room", color: 0x4466ff, position: { x: 15, y: 0, z: -10 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "kitchen", name: "Kitchen", color: 0xffffee, position: { x: -15, y: 0, z: 5 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "library", name: "Library", color: 0xffcc88, position: { x: 0, y: 0, z: 5 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "music_room", name: "Music Room", color: 0xff6644, position: { x: 15, y: 0, z: 5 }, size: { x: 12, y: 3, z: 12 } },
-      { id: "garden", name: "Garden", color: 0x88ff88, position: { x: -7.5, y: 0, z: 15 }, size: { x: 20, y: 3, z: 10 } },
-      { id: "bedroom", name: "Bedroom", color: 0xcc88cc, position: { x: 10, y: 0, z: 15 }, size: { x: 12, y: 3, z: 10 } },
-    ];
-
-    // Group users by voice channel for dynamic voice channel rooms
-    const voiceChannelGroups = new Map<string, UserState[]>();
-
-    usersArray.forEach(user => {
-      if (user.voiceChannelId && user.voiceChannelName) {
-        if (!voiceChannelGroups.has(user.voiceChannelId)) {
-          voiceChannelGroups.set(user.voiceChannelId, []);
-        }
-        voiceChannelGroups.get(user.voiceChannelId)!.push(user);
-      }
-    });
-
-    const generatedRooms: RoomConfig[] = [...roomTypes];
-
-    // Add voice channel rooms on the far right
-    const voiceChannels = Array.from(voiceChannelGroups.entries());
-    const voiceZoneStart = 30;
-    const voiceChannelSpacing = 12;
-
-    voiceChannels.forEach(([channelId, channelUsers], index) => {
-      const channelName = channelUsers[0]?.voiceChannelName || `Voice Channel ${index + 1}`;
-      generatedRooms.push({
-        id: channelId,
-        name: channelName,
-        color: 0x88aacc,
-        position: { x: voiceZoneStart, y: 0, z: (index * voiceChannelSpacing) - (voiceChannels.length * voiceChannelSpacing / 2) },
-        size: { x: 10, y: 3, z: 10 },
-        isVoiceChannel: true,
-      });
-    });
-
-    return generatedRooms;
-  }, [usersArray]);
+  const rooms = useMemo(() => buildRooms(usersArray), [usersArray]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
@@ -110,7 +64,14 @@ const App: React.FC = () => {
       />
 
       {/* Activity Log */}
-      <ActivityLog logs={logs} onClear={clearLogs} />
+      <ActivityLog logs={logs} onClear={clearLogs} maxHeight={300} />
+
+      {mode === "demo" && (
+        <div className="demo-banner" role="status">
+          <strong>Demo mode</strong>
+          <span>Fictional activity · no Discord account or bot token required</span>
+        </div>
+      )}
 
       {/* Connection status indicator */}
       <div
@@ -138,7 +99,7 @@ const App: React.FC = () => {
             animation: connected ? "pulse 2s infinite" : "none",
           }}
         />
-        <span>{connected ? "Connected" : "Disconnected"}</span>
+        <span>{mode === "demo" ? "Local demo" : connected ? "Connected" : "Disconnected"}</span>
       </div>
 
       {/* Global styles for animations */}

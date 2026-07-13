@@ -112,11 +112,15 @@ export class WebSocketServerInstance {
           break;
 
         case "request_state":
-          // Request full state (can be implemented to cache and send)
-          this.sendToClient(ws, {
-            type: "state_request_received",
-            timestamp: new Date().toISOString(),
-          });
+          if (this.lastState) {
+            this.sendToClient(ws, this.lastState);
+          } else {
+            this.sendToClient(ws, {
+              type: "initial_state",
+              message: "Waiting for Discord events...",
+              timestamp: new Date().toISOString(),
+            });
+          }
           break;
 
         default:

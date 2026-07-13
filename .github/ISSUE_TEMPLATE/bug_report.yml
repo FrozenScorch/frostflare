@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible Frostflare problem without sharing private Discord data
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Never include bot tokens, private messages, real usernames, or server IDs."
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options: [Demo, Live Discord, Both]
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Node version, browser, and operating system
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs
+      description: Remove all tokens, messages, usernames, guild names, and IDs.
