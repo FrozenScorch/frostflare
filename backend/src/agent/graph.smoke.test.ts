@@ -28,6 +28,9 @@ test("a synthetic Discord event traverses the graph and produces wire state", as
           status: "online",
           activities: [],
           clientStatus: { desktop: "online" },
+          inVoiceChannel: true,
+          voiceChannelId: "smoke-lounge",
+          voiceChannelName: "Smoke Lounge",
         },
       },
     ]);
@@ -37,6 +40,9 @@ test("a synthetic Discord event traverses the graph and produces wire state", as
     assert.equal(broadcast.users.length, 1);
     assert.equal(broadcast.users[0].id, "smoke-user");
     assert.equal(broadcast.users[0].guildId, "smoke-guild");
+    assert.equal(broadcast.users[0].voiceChannelId, "smoke-lounge");
+    assert.equal(broadcast.users[0].voiceChannelName, "Smoke Lounge");
+    assert.equal(broadcast.users[0].targetPosition.x, 20);
     assert.match(broadcast.timestamp, /^\d{4}-\d{2}-\d{2}T/);
   } finally {
     setWsBroadcast(() => undefined);

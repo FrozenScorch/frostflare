@@ -2,6 +2,8 @@ import type { Room, UserState } from "../types";
 
 export const ROOM_SIZE = 10;
 export const VOICE_WING_X = 20;
+export const HOUSE_MIN_Z = -15;
+export const HOUSE_MAX_Z = 15;
 
 // A single, contiguous 3x3 ground floor. The entrance sits on the front edge.
 export const HOUSE_ROOMS: Room[] = [
@@ -33,8 +35,41 @@ export function getVoiceRoomPosition(index: number, total: number) {
 }
 
 export function userBelongsInRoom(user: UserState, roomId: string): boolean {
-  if (user.currentRoom === roomId) return true;
-  return Boolean(user.voiceChannelId && getVoiceRoomId(user.voiceChannelId) === roomId);
+  if (user.voiceChannelId) {
+    return getVoiceRoomId(user.voiceChannelId) === roomId;
+  }
+  return user.currentRoom === roomId;
+}
+
+export function getEastExteriorWallSegments(voiceRooms: Room[]) {
+  if (voiceRooms.length === 0) {
+    return [{ centerZ: 0, length: HOUSE_MAX_Z - HOUSE_MIN_Z }];
+  }
+
+  const openingMin = Math.max(
+    HOUSE_MIN_Z,
+    Math.min(...voiceRooms.map((room) => room.position.z - room.size.z / 2)),
+  );
+  const openingMax = Math.min(
+    HOUSE_MAX_Z,
+    Math.max(...voiceRooms.map((room) => room.position.z + room.size.z / 2)),
+  );
+  const segments: Array<{ centerZ: number; length: number }> = [];
+
+  if (openingMin > HOUSE_MIN_Z) {
+    segments.push({
+      centerZ: (HOUSE_MIN_Z + openingMin) / 2,
+      length: openingMin - HOUSE_MIN_Z,
+    });
+  }
+  if (openingMax < HOUSE_MAX_Z) {
+    segments.push({
+      centerZ: (openingMax + HOUSE_MAX_Z) / 2,
+      length: HOUSE_MAX_Z - openingMax,
+    });
+  }
+
+  return segments;
 }
 
 export function buildRooms(users: UserState[]): Room[] {

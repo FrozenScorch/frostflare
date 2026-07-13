@@ -4,6 +4,7 @@ import { createDemoSnapshot } from "./demo";
 import {
   HOUSE_ROOMS,
   buildRooms,
+  getEastExteriorWallSegments,
   getVoiceRoomId,
   userBelongsInRoom,
 } from "./houseLayout";
@@ -46,7 +47,17 @@ test("voice rooms use the channel name, canonical id, and attached wing", () => 
 
   const roomId = getVoiceRoomId(voiceUser.voiceChannelId);
   const voiceRoom = rooms.find((room) => room.id === roomId);
+  assert.ok(voiceRoom);
   assert.equal(voiceRoom?.name, voiceUser.voiceChannelName);
   assert.equal(voiceRoom?.position.x, 20);
   assert.equal(userBelongsInRoom(voiceUser, roomId), true);
+
+  const staleActivityRoomUser = { ...voiceUser, currentRoom: "living_room" };
+  assert.equal(userBelongsInRoom(staleActivityRoomUser, "living_room"), false);
+  assert.equal(userBelongsInRoom(staleActivityRoomUser, roomId), true);
+
+  assert.deepEqual(getEastExteriorWallSegments([voiceRoom]), [
+    { centerZ: -10, length: 10 },
+    { centerZ: 10, length: 10 },
+  ]);
 });

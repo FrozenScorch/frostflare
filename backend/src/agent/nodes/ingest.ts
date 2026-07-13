@@ -111,16 +111,6 @@ async function handleMessage(
 
   const user = users.get(userId)!;
   user.lastActivity = new Date();
-
-  // Synthetic startup presences include current voice state, so the first
-  // rendered snapshot already matches the channel members are actually in.
-  if (data.inVoiceChannel && data.voiceChannelId) {
-    user.inVoiceChannel = true;
-    user.voiceChannelId = data.voiceChannelId;
-    user.voiceChannelName = data.voiceChannelName || "Voice Channel";
-    user.activityType = "voice_chat";
-    user.action = "talking";
-  }
   user.activityType = "chatting";
   user.action = "talking";
   user.recentMessages = user.recentMessages || [];
@@ -316,6 +306,18 @@ async function handlePresenceUpdate(
     }
   } else {
     user.richPresence = "";
+  }
+
+  // Synthetic startup presences include current voice state, so the first
+  // rendered snapshot already matches the channel members are actually in.
+  if (data.inVoiceChannel && data.voiceChannelId) {
+    user.inVoiceChannel = true;
+    user.voiceChannelId = data.voiceChannelId;
+    user.voiceChannelName = data.voiceChannelName || "Voice Channel";
+    if (!user.richPresence) {
+      user.activityType = "voice_chat";
+      user.action = "talking";
+    }
   }
 
   console.log(`[Ingest] ${user.username} presence update: ${data.status}`);

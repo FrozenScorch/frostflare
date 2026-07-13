@@ -1,5 +1,6 @@
 import React from "react";
 import type { Room } from "../types";
+import { getEastExteriorWallSegments } from "../data/houseLayout";
 
 interface HouseShellProps {
   rooms: Room[];
@@ -53,6 +54,7 @@ export const HouseShell: React.FC<HouseShellProps> = ({ rooms }) => {
   const voiceMaxZ = voiceRooms.length > 0
     ? Math.max(...voiceRooms.map((room) => room.position.z + room.size.z / 2))
     : 0;
+  const eastWallSegments = getEastExteriorWallSegments(voiceRooms);
 
   return (
     <group>
@@ -65,8 +67,13 @@ export const HouseShell: React.FC<HouseShellProps> = ({ rooms }) => {
       {/* Exterior walls, with an open front door and an open garden patio edge. */}
       <Wall position={[0, 0.75, -15]} size={[30.3, 1.5, 0.28]} />
       <Wall position={[-15, 0.75, -5]} size={[0.28, 1.5, 20]} />
-      <Wall position={[15, 0.75, -5]} size={[0.28, 1.5, 20]} />
-      <Wall position={[15, 0.75, 12.5]} size={[0.28, 1.5, 5]} />
+      {eastWallSegments.map((segment) => (
+        <Wall
+          key={`east-${segment.centerZ}`}
+          position={[15, 0.75, segment.centerZ]}
+          size={[0.28, 1.5, segment.length]}
+        />
+      ))}
       <Wall position={[-10.5, 0.75, 15]} size={[9, 1.5, 0.28]} />
       <Wall position={[-3.25, 0.75, 15]} size={[3.5, 1.5, 0.28]} />
       <Wall position={[3.25, 0.75, 15]} size={[3.5, 1.5, 0.28]} />
