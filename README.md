@@ -1,5 +1,7 @@
 # Frostflare
 
+> Start with the [product overview](docs/PRODUCT.md) for the community problem, product value, proof, limitations, and roadmap. Continue here for the two-minute demo.
+
 Turn a Discord community into a living 3D house. Frostflare maps messages, voice activity, games, music, and presence into rooms, avatars, conversations, and movement—locally, on your own computer.
 
 ![Frostflare demo showing a 3D community house](docs/assets/frostflare-demo.png)
